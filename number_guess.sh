@@ -2,39 +2,39 @@
 PSQL="psql --username=freecodecamp --dbname=number_guess -t --no-align -c"
 
 echo "Enter your username:"
-read USERNAME
+read user_name
 
-USER_INFO=$($PSQL "SELECT user_id,games_played,best_game FROM users WHERE username='$USERNAME'")
+user_data=$($PSQL "SELECT user_id,games_played,best_game FROM users WHERE username='$user_name'")
 
-if [[ -z $USER_INFO ]]
+if [[ -z $user_data ]]
 then
-  echo "Welcome, $USERNAME! It looks like this is your first time here."
-  INSERT=$($PSQL "INSERT INTO users(username) VALUES('$USERNAME')")
+  echo "Welcome, $user_name! It looks like this is your first time here."
+  add_user=$($PSQL "INSERT INTO users(username) VALUES('$user_name')")
 else
-  IFS="|" read USER_ID GAMES BEST <<< "$USER_INFO"
-  echo "Welcome back, $USERNAME! You have played $GAMES games, and your best game took $BEST guesses."
+  IFS="|" read uid total_games best_score <<< "$user_data"
+  echo "Welcome back, $user_name! You have played $total_games games, and your best game took $best_score guesses."
 fi
 
-SECRET=$(( RANDOM % 1000 + 1 ))
+secret_value=$(( RANDOM % 1000 + 1 ))
 echo "Guess the secret number between 1 and 1000:"
-NUMBER_OF_GUESSES=0
+guess_total=0
 
 while true
 do
-  read GUESS
+  read user_guess
 
-  if [[ ! $GUESS =~ ^[0-9]+$ ]]
+  if [[ ! $user_guess =~ ^[0-9]+$ ]]
   then
     echo "That is not an integer, guess again:"
     continue
   fi
 
-  ((NUMBER_OF_GUESSES++))
+  ((guess_total++))
 
-  if [[ $GUESS -gt $SECRET ]]
+  if [[ $user_guess -gt $secret_value ]]
   then
     echo "It's lower than that, guess again:"
-  elif [[ $GUESS -lt $SECRET ]]
+  elif [[ $user_guess -lt $secret_value ]]
   then
     echo "It's higher than that, guess again:"
   else
@@ -42,18 +42,18 @@ do
   fi
 done
 
-echo "You guessed it in $NUMBER_OF_GUESSES tries. The secret number was $SECRET. Nice job!"
+echo "You guessed it in $guess_total tries. The secret number was $secret_value. Nice job!"
 
-if [[ -z $USER_INFO ]]
+if [[ -z $user_data ]]
 then
-  UPDATE=$($PSQL "UPDATE users SET games_played=1, best_game=$NUMBER_OF_GUESSES WHERE username='$USERNAME'")
+  save_stats=$($PSQL "UPDATE users SET games_played=1, best_game=$guess_total WHERE username='$user_name'")
 else
-  if [[ -z $BEST || $NUMBER_OF_GUESSES -lt $BEST ]]
+  if [[ -z $best_score || $guess_total -lt $best_score ]]
   then
-    BEST=$NUMBER_OF_GUESSES
+    best_score=$guess_total
   fi
-  ((GAMES++))
-  UPDATE=$($PSQL "UPDATE users SET games_played=$GAMES, best_game=$BEST WHERE username='$USERNAME'")
+  ((total_games++))
+  save_stats=$($PSQL "UPDATE users SET games_played=$total_games, best_game=$best_score WHERE username='$user_name'")
 fi
 
 #Testing Done, All Good
